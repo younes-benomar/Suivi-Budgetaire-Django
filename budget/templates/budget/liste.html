@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Mon Suivi Budgétaire</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* CSS Simple dyal Etudiant */
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f8f9fa; /* Rmadi mftou7 */
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        
+        h1, h2, h3 { color: #2c3e50; }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #ddd;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        .btn-export {
+            background-color: #198754;
+            color: white;
+            padding: 8px 15px;
+            text-decoration: none;
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+        }
+
+        /* L-Mrab3at l-kbaar */
+        .cards-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .card {
+            flex: 1;
+            background: white;
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            text-align: center;
+        }
+        
+        /* Layout jdid m9ssem 3la jouj */
+        .main-layout {
+            display: flex;
+            gap: 20px;
+        }
+
+        /* L-jiha dyal l-issar (Formulaire + Graphique) */
+        .left-column {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* L-jiha dyal l-imen (Jadwal) */
+        .right-column {
+            flex: 2;
+        }
+
+        /* L-box dyal ay blassa (Formulaire, Graph, Jadwal) */
+        .box {
+            background: white;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        /* Stail dyal L-Formulaire */
+        .form-group {
+            margin-bottom: 10px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        .form-input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #bbb;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .btn-ajouter {
+            background-color: #0d6efd;
+            color: white;
+            padding: 10px;
+            width: 100%;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        /* Stail dyal L-Jadwal */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+            text-align: left;
+        }
+        th { background-color: #f1f1f1; }
+        
+        .depense { color: #dc3545; font-weight: bold; }
+        .revenu { color: #198754; font-weight: bold; }
+
+        /* L-Progress Bar */
+        .progress-bg {
+            background-color: #e9ecef;
+            border-radius: 5px;
+            height: 20px;
+            width: 100%;
+            margin-top: 10px;
+        }
+        .progress-fill {
+            background-color: #198754;
+            height: 100%;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <div class="header">
+        <h1>Mon Dashboard Budgétaire</h1>
+        <a href="{% url 'export_excel' %}" class="btn-export">Exporter en CSV</a>
+    </div>
+
+    <div class="cards-row">
+        <div class="card">
+            <h3>Total Revenus</h3>
+            <h2 class="revenu">+ {{ total_revenus }} DH</h2>
+        </div>
+        <div class="card">
+            <h3>Total Dépenses</h3>
+            <h2 class="depense">- {{ total_depenses }} DH</h2>
+        </div>
+        <div class="card">
+            <h3>Solde Actuel</h3>
+            <h2 style="color: #0d6efd;">{{ solde }} DH</h2>
+        </div>
+    </div>
+
+    <div class="box" style="margin-bottom: 20px;">
+        <h3 style="margin-top: 0;">🎯 Mes Objectifs</h3>
+        {% for obj in objectifs %}
+            <p style="margin: 0;"><strong>{{ obj.titre }}</strong> - Cible: {{ obj.montant_cible }} DH ({{ obj.pourcentage }}%)</p>
+            <div class="progress-bg">
+                <div class="progress-fill" style="width: {{ obj.pourcentage }}%;"></div>
+            </div>
+        {% empty %}
+            <p>Aucun objectif pour le moment.</p>
+        {% endfor %}
+    </div>
+
+    <div class="main-layout">
+        
+        <div class="left-column">
+            
+            <div class="box">
+                <h3 style="margin-top: 0;">Ajouter une Transaction</h3>
+                <form method="POST">
+                    {% csrf_token %}
+                    
+                    <div class="form-group">
+                        <label>Titre de la transaction:</label>
+                        {{ form.titre }}
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Montant (DH):</label>
+                        {{ form.montant }}
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Catégorie:</label>
+                        {{ form.categorie }}
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Type:</label>
+                        {{ form.type_transaction }}
+                    </div>
+
+                    <button type="submit" class="btn-ajouter">Enregistrer</button>
+                </form>
+            </div>
+
+            <div class="box" style="text-align: center;">
+                <h3 style="margin-top: 0;">Répartition des Dépenses</h3>
+                <div style="max-width: 250px; margin: 0 auto;">
+                    <canvas id="monGraphique"></canvas>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="right-column">
+            <div class="box">
+                <h3 style="margin-top: 0;">Historique</h3>
+                <table>
+                    <tr>
+                        <th>Date</th>
+                        <th>Titre</th>
+                        <th>Catégorie</th>
+                        <th>Montant</th>
+                    </tr>
+                    {% for transaction in transactions %}
+                    <tr>
+                        <td>{{ transaction.date }}</td>
+                        <td>{{ transaction.titre }}</td>
+                        <td>{{ transaction.categorie.nom }}</td>
+                        
+                        {% if transaction.type_transaction == 'DEPENSE' %}
+                            <td class="depense">- {{ transaction.montant }} DH</td>
+                        {% else %}
+                            <td class="revenu">+ {{ transaction.montant }} DH</td>
+                        {% endif %}
+                    </tr>
+                    {% endfor %}
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+    const labels = {{ labels_json|safe }};
+    const data = {{ data_json|safe }};
+
+    const ctx = document.getElementById('monGraphique').getContext('2d');
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: data,
+                backgroundColor: ['#dc3545', '#198754', '#0d6efd', '#ffc107', '#6c757d', '#0dcaf0'],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { position: 'bottom' }
+            }
+        }
+    });
+</script>
+
+</body>
+</html>
